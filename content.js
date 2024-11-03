@@ -1,5 +1,6 @@
 import { YoutubeTranscript } from 'youtube-transcript';
 import { GoogleGenerativeAI } from "@google/generative-ai";
+import { HarmBlockThreshold, HarmCategory } from "@google/generative-ai";
 
 // Main function to extract transcript
 async function extractTranscript() {
@@ -12,9 +13,19 @@ async function extractTranscript() {
             throw new Error('Could not find a valid YouTube video ID');
         }
 
-        const transcript = await YoutubeTranscript.fetchTranscript(videoId);
+        // Try to get English transcript first
+        let transcript;
+        try {
+            transcript = await YoutubeTranscript.fetchTranscript(videoId, {
+                lang: 'en'
+            });
+        } catch (error) {
+            // If English not available, get default transcript
+            transcript = await YoutubeTranscript.fetchTranscript(videoId);
+        }
+
         if (!transcript || transcript.length === 0) {
-            throw new Error('No transcript available for this video');
+            throw new Error('Failed to get transcript');
         }
 
         // Format the transcript
@@ -25,7 +36,6 @@ async function extractTranscript() {
                 return `${timestamp} ${cleanText}`;
             })
             .join('\n');
-        // const summary = await getSummary(formattedTranscript);
 
         return formattedTranscript;
 
@@ -53,47 +63,49 @@ async function getSummary(text) {
             throw new Error('No text provided to summarize');
         }
 
-        console.log('Starting getSummary function with text length:', text.length);
-        
-        if (!apiKey) {
-            throw new Error('API key is not configured');
-        }
-        console.log('API Key loaded');
-        
+        const apiKey = "AIzaSyD71WGdepjZOC4uf3smuqY4zkYRtzYHKHw";
         const genAI = new GoogleGenerativeAI(apiKey);
-        console.log('GenAI instance created');
-        
-        const model = genAI.getGenerativeModel({ 
-            model: "gemini-1.5-flash",
-            generationConfig: {
-                maxOutputTokens: 1000,
-                temperature: 0.4
+
+        const safetySettings = [
+            {
+                category: HarmCategory.HARM_CATEGORY_HARASSMENT,
+                threshold: HarmBlockThreshold.BLOCK_LOW_AND_ABOVE,
+            },
+            {
+                category: HarmCategory.HARM_CATEGORY_HATE_SPEECH,
+                threshold: HarmBlockThreshold.BLOCK_LOW_AND_ABOVE,
             }
+        ];
+
+        const model = genAI.getGenerativeModel({ 
+            model: "gemini-pro",
+            safetySettings: safetySettings
         });
-        console.log('Model configured');
 
-        // Use the actual transcript text instead of 'Hello'
-        const prompt = `Please summarize the following transcript:\n\n${text}`;
-    
-        const result = await model.generateContentStream(prompt);
+        const prompt = `Please provide a concise summary of the following video transcript. Focus on the main points and key takeaways. If the transcript is not in English, please translate it to English first:\n\n${text}`;
 
-        // Print text as it comes in.
-        for await (const chunk of result.stream) {
-            const chunkText = chunk.text();
-                process.stdout.write(chunkText);
-                }
-        return response;
+        const result = await model.generateContent(prompt);
+        const response = await result.response;
+        const summary = response.text();
+
+        if (!summary || summary.trim().length === 0) {
+            throw new Error('Failed to generate summary');
+        }
+
+        console.log("Summary generated:", summary);
+        return summary;
+
     } catch (error) {
-        console.error('Detailed error in getSummary:', {
-            message: error.message,
-            stack: error.stack,
-            name: error.name
-        });
-        throw new Error(`Failed to generate summary: ${error.message}`);
+        console.error('Summary generation error:', error);
+        if (error.message.includes('API key')) {
+            throw new Error('Invalid API key or API quota exceeded');
+        }
+        if (error.message.includes('SAFETY')) {
+            throw new Error('Content was blocked due to safety filters');
+        }
+        throw error;
     }
 }
-
-// Automatically generate summary after getting transcrip
 
 // Add this new function to decode HTML entities
 function decodeHTMLEntities(text) {

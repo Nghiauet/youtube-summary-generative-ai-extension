@@ -59,15 +59,56 @@ document.getElementById('copyTranscript').addEventListener('click', async () => 
     }
 });
 
+document.getElementById('getSummary').addEventListener('click', async () => {
+    const transcriptElement = document.getElementById('transcript');
+    const summaryContainer = document.getElementById('summaryContainer');
+    const summaryText = document.getElementById('summaryText');
+    const errorElement = document.getElementById('error');
+    
+    if (!transcriptElement.value.trim()) {
+        errorElement.innerHTML = `<i class="fas fa-exclamation-circle"></i> Please get transcript first`;
+        errorElement.classList.add('active');
+        return;
+    }
+    
+    try {
+        showLoading(true);
+        errorElement.classList.remove('active');
+        
+        const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+        
+        const result = await chrome.scripting.executeScript({
+            target: { tabId: tab.id },
+            func: (transcriptText) => {
+                return window.getSummary(transcriptText);
+            },
+            args: [transcriptElement.value]
+        });
+        
+        const summary = result[0]?.result;
+        
+        if (!summary) {
+            throw new Error('No summary generated');
+        }
+        
+        summaryText.textContent = summary;
+        summaryContainer.style.display = 'block';
+        
+    } catch (error) {
+        console.error('Summary generation error:', error);
+        errorElement.innerHTML = `<i class="fas fa-exclamation-circle"></i> ${error.message || 'Failed to generate summary'}`;
+        errorElement.classList.add('active');
+        summaryContainer.style.display = 'none';
+    } finally {
+        showLoading(false);
+    }
+});
+
 function showLoading(show) {
     const loadingElement = document.getElementById('loading');
-    const transcriptElement = document.getElementById('transcript');
-    
     if (show) {
         loadingElement.classList.add('active');
-        transcriptElement.style.opacity = '0.5';
     } else {
         loadingElement.classList.remove('active');
-        transcriptElement.style.opacity = '1';
     }
 }
