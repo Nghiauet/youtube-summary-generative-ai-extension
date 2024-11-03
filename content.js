@@ -25,6 +25,7 @@ async function extractTranscript() {
                 return `${timestamp} ${cleanText}`;
             })
             .join('\n');
+        // const summary = await getSummary(formattedTranscript);
 
         return formattedTranscript;
 
@@ -48,7 +49,20 @@ function formatTimestamp(seconds) {
 // Function to get summary using Gemini
 async function getSummary(text) {
     try {
-        const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY);
+        if (!text) {
+            throw new Error('No text provided to summarize');
+        }
+
+        console.log('Starting getSummary function with text length:', text.length);
+        
+        if (!apiKey) {
+            throw new Error('API key is not configured');
+        }
+        console.log('API Key loaded');
+        
+        const genAI = new GoogleGenerativeAI(apiKey);
+        console.log('GenAI instance created');
+        
         const model = genAI.getGenerativeModel({ 
             model: "gemini-1.5-flash",
             generationConfig: {
@@ -56,16 +70,30 @@ async function getSummary(text) {
                 temperature: 0.4
             }
         });
+        console.log('Model configured');
 
-        const prompt = `Please provide a concise summary of the following video transcript. Focus on the main points and key takeaways:\n\n${text}`;
+        // Use the actual transcript text instead of 'Hello'
+        const prompt = `Please summarize the following transcript:\n\n${text}`;
+    
+        const result = await model.generateContentStream(prompt);
 
-        const result = await model.generateContent(prompt);
-        return result.response.text();
+        // Print text as it comes in.
+        for await (const chunk of result.stream) {
+            const chunkText = chunk.text();
+                process.stdout.write(chunkText);
+                }
+        return response;
     } catch (error) {
-        console.error('Summary generation error:', error);
-        throw new Error('Failed to generate summary. Please try again.');
+        console.error('Detailed error in getSummary:', {
+            message: error.message,
+            stack: error.stack,
+            name: error.name
+        });
+        throw new Error(`Failed to generate summary: ${error.message}`);
     }
 }
+
+// Automatically generate summary after getting transcrip
 
 // Add this new function to decode HTML entities
 function decodeHTMLEntities(text) {

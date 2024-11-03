@@ -1,147 +1,48 @@
 <!DOCTYPE html>
 <html>
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>YouTube Transcript Summarizer</title>
-    <style>
-        body {
-            width: 300px;
-            padding: 10px;
-        }
-        button {
-            margin: 5px;
-            padding: 5px 10px;
-        }
-        #result {
-            margin-top: 10px;
-            white-space: pre-wrap;
-        }
-        textarea {
-            width: 90%;
-            min-height: 100px;
-            padding: 10px;
-            margin: 10px 0;
-            background: #37474F;
-            color: #fff;
-            border-radius: 12px;
-            outline: unset;
-            outline-offset: unset;
-            box-shadow: 0 5px 8px rgba(0, 0, 0, .4);
-            font-family: 'Poppins', sans-serif;
-            resize: vertical;
-        }
-        .container {
-            width: 90%;
-            margin: 10px auto;
-            padding: 10px;
-            background: #37474F;
-            border-radius: 12px;
-            color: #fff;
-            font-family: 'Poppins', sans-serif;
-            box-shadow: 0 5px 8px rgba(0, 0, 0, .4);
-        }
-        .container__btn {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 10px;
-        }
-        .btn {
-            padding: 10px 20px;
-            border-radius: 12px;
-            font-size: 14px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-        .btn-shine {
-            background: linear-gradient(45deg, #ff6b6b, #ffb347);
-            color: #fff;
-        }
-        .btn-gradients {
-            background: linear-gradient(45deg, #4CAF50, #45a049);
-            color: #fff;
-        }
-        .loading {
-            display: none;
-            width: 24px;
-            height: 24px;
-            margin: 10px auto;
-            border: 3px solid #37474F;
-            border-top: 3px solid #1bdbd1;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-        }
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-        .loading.active {
-            display: block;
-        }
-        .error-message {
-            color: #ff4444;
-            background: rgba(255, 68, 68, 0.1);
-            padding: 10px;
-            border-radius: 8px;
-            margin: 10px 0;
-            font-size: 12px;
-            text-align: center;
-            display: none;
-        }
-        .error-message.active {
-            display: block;
-        }
-        .summary-container {
-            width: 90%;
-            margin: 10px auto;
-            padding: 10px;
-            background: #37474F;
-            border-radius: 12px;
-            color: #fff;
-            font-family: 'Poppins', sans-serif;
-            box-shadow: 0 5px 8px rgba(0, 0, 0, .4);
-        }
-        .summary-title {
-            font-size: 14px;
-            color: #1bdbd1;
-            margin-bottom: 8px;
-            font-weight: bold;
-        }
-        .summary-text {
-            font-size: 13px;
-            line-height: 1.4;
-            max-height: 200px;
-            overflow-y: auto;
-        }
-        ::-webkit-scrollbar {
-            width: 8px;
-        }
-        ::-webkit-scrollbar-track {
-            background: #37474F;
-            border-radius: 4px;
-        }
-        ::-webkit-scrollbar-thumb {
-            background: #1bdbd1;
-            border-radius: 4px;
-        }
-        ::-webkit-scrollbar-thumb:hover {
-            background: #1fa2ff;
-        }
-    </style>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="popup.css" rel="stylesheet">
 </head>
 <body>
     <div class="container">
+        <h1 class="title">YouTube Transcript</h1>
+        
         <div class="container__btn">
-            <button class="btn btn-shine" id="getTranscript"><span>Get Transcript</span></button>
-            <button class="btn btn-gradients" id="getSummary"><span>Get Summary</span></button>
+            <button class="btn btn-shine" id="getTranscript">
+                <i class="fas fa-closed-captioning"></i>
+                <span>Get Transcript</span>
+            </button>
+            <button class="btn btn-shine" id="copyTranscript">
+                <i class="fas fa-copy"></i>
+                <span>Copy</span>
+            </button>
+            <button class="btn btn-gradients" id="getSummary">
+                <i class="fas fa-magic"></i>
+                <span>Summarize</span>
+            </button>
         </div>
         
-        <textarea id="transcript" placeholder="Transcript will appear here..." readonly></textarea>
+        <div class="transcript-container">
+            <textarea id="transcript" placeholder="Click 'Get Transcript' to start..." readonly></textarea>
+        </div>
         
-        <div class="loading" id="loading"></div>
+        <div class="loading" id="loading">
+            <div class="loading-spinner"></div>
+            <span>Processing...</span>
+        </div>
         
         <div class="error-message" id="error"></div>
         
         <div class="summary-container" id="summaryContainer" style="display: none;">
-            <div class="summary-title">Summary</div>
+            <div class="summary-title">
+                <i class="fas fa-star"></i>
+                Summary
+            </div>
             <div class="summary-text" id="summaryText"></div>
         </div>
     </div>

@@ -1,0 +1,28 @@
+.yt-transcript-table {
+    margin: 20px;
+    background: #fff;
+    border-radius: 8px;
+    padding: 16px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.yt-transcript-table table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.yt-transcript-table th,
+.yt-transcript-table td {
+    padding: 8px 12px;
+    text-align: left;
+    border-bottom: 1px solid #eee;
+}
+
+.yt-transcript-table th {
+    background: #f8f8f8;
+    font-weight: bold;
+}
+
+.yt-transcript-table tr:hover {
+    background: #f5f5f5;
+} 
