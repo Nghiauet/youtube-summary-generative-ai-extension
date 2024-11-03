@@ -1,23 +1,36 @@
-document.getElementById('extract').addEventListener('click', async () => {
+document.getElementById('getTranscript').addEventListener('click', async () => {
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-    const transcriptArea = document.getElementById('transcript');
+    const loadingElement = document.getElementById('loading');
+    const errorElement = document.getElementById('error');
+    const transcriptElement = document.getElementById('transcript');
     
     try {
-        transcriptArea.value = 'Loading transcript...';
+        loadingElement.classList.add('active');
+        errorElement.classList.remove('active');
         
         const result = await chrome.scripting.executeScript({
             target: { tabId: tab.id },
             func: () => window.extractTranscript()
         });
         
-        const transcript = result[0].result;
-        if (transcript.startsWith('⚠')) {
-            transcriptArea.value = transcript;
-        } else {
-            transcriptArea.value = transcript || '⚠ No transcript content found';
+        // Add null check and better error handling
+        const transcript = result[0]?.result;
+        if (!transcript) {
+            throw new Error('No transcript data available');
         }
+        
+        // Only check startsWith if we have a string
+        if (typeof transcript === 'string' && transcript.startsWith('⚠')) {
+            throw new Error(transcript.substring(2));
+        }
+        
+        transcriptElement.value = transcript;
     } catch (error) {
-        console.error('Script execution error:', error);
-        transcriptArea.value = '⚠ Error: Make sure you are on a YouTube video page with the transcript panel open';
+        console.error('Transcript extraction error:', error);
+        errorElement.textContent = `Error: ${error.message || 'Failed to extract transcript'}`;
+        errorElement.classList.add('active');
+        transcriptElement.value = ''; // Clear transcript area on error
+    } finally {
+        loadingElement.classList.remove('active');
     }
 });
