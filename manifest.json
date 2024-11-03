@@ -1,0 +1,22 @@
+{
+    "manifest_version": 3,
+    "name": "YouTube Transcript Summarizer",
+    "version": "1.0",
+    "description": "Extracts and summarizes YouTube video transcripts using Gemini AI",
+    "permissions": [
+        "activeTab",
+        "scripting"
+    ],
+    "content_scripts": [
+        {
+            "matches": ["*://*.youtube.com/*"],
+            "js": ["dist/content.bundle.js"]
+        }
+    ],
+    "host_permissions": [
+        "*://*.youtube.com/*"
+    ],
+    "action": {
+        "default_popup": "redwriter.html"
+    }
+}
