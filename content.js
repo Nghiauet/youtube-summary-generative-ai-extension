@@ -69,8 +69,8 @@ async function generateSummary(text) {
             }
         }
 
-        // Initialize Gemini AI with safety settings
-        const apiKey = "AIzaSyD71WGdepjZOC4uf3smuqY4zkYRtzYHKHw";
+        // Initialize Gemini AI with safety settings get from env
+        const apiKey = process.env.GOOGLE_API_KEY;
         const genAI = new GoogleGenerativeAI(apiKey);
 
         // Configure comprehensive safety settings
@@ -94,82 +94,106 @@ async function generateSummary(text) {
         ];
 
         // Initialize model with enhanced configuration
-        const model = genAI.getGenerativeModel({ 
-            model: "gemini-1.5-pro-latest",
-            safetySettings,
-            generationConfig: {
-                temperature: 0.7,
-                topK: 40,
-                topP: 0.95,
-                maxOutputTokens: 8000,
+        let modelName = "gemini-1.5-pro-latest";
+        try {
+            const model = genAI.getGenerativeModel({ 
+                model: modelName,
+                safetySettings,
+                generationConfig: {
+                    temperature: 0.7,
+                    topK: 40,
+                    topP: 0.95,
+                    maxOutputTokens: 8000,
+                }
+            });
+
+            // Craft a detailed prompt for better summaries
+            const prompt = `
+                create a summary of this video transcript that short and easy to understand.
+
+                Instructions:
+                1. If the transcript is not in English, translate it to English first
+                2. Break down the content into clear, logical sections
+                3. Use bullet points to highlight key information
+                4. Keep the summary concise while capturing the main ideas
+                5. Include any important quotes, statistics, or specific details
+                6. Format the output with HTML tags for better readability
+
+                Here is the transcript to summarize:
+                ${text}
+            `;
+
+            // Generate content with streaming
+            const result = await model.generateContentStream(prompt);
+            let formattedContent = '';
+
+            // Process and format chunks as they arrive
+            for await (const chunk of result.stream) {
+                const chunkText = chunk.text();
+                formattedContent += chunkText;
+
+                // Format the current content
+                const formattedSummary = formattedContent
+                    .split('\n')
+                    .map(line => {
+                        line = line.trim();
+                        if (line.length === 0) return '';
+
+                        if (line.endsWith(':')) {
+                            return `<p style="font-size: 2.2em; color: #000; margin: 1em 0 0.3em 0; border-bottom: 1px solid #ddd; padding-bottom: 0.2em; font-weight: bold;">${line}</p>`;
+                        }
+
+                        if (line.startsWith('* **')) {
+                            const content = line.replace(/^\* \*\*(.*)\*\*$/, '$1');
+                            return `<li style="font-size: 1.8em; margin: 0.3em 0; font-weight: bold;">${content}</li>`;
+                        }
+
+                        if (line.startsWith('*')) {
+                            const content = line.replace(/^\* /, '');
+                            return `<li style="font-size: 1.8em; margin: 0.3em 0;">${content}</li>`;
+                        }
+
+                        return `<p style="font-size: 1.8em; margin: 0.3em 0; line-height: 1.4;">${line}</p>`;
+                    })
+                    .filter(line => line.length > 0)
+                    .join('\n');
+
+                // Wrap bullet points in unordered lists
+                const wrappedSummary = formattedSummary.replace(
+                    /(<li[^>]*>.*?<\/li>\n*)+/g, 
+                    match => `<ul style="list-style-type: disc; margin: 0.3em 0 0.3em 1.5em;">${match}</ul>`
+                );
+
+                // Update the summary div with the latest content
+                const summaryDiv = document.getElementById('summary');
+                if (summaryDiv) {
+                    summaryDiv.innerHTML = wrappedSummary;
+                }
             }
-        });
 
-        // Craft a detailed prompt for better summaries
-        const prompt = `
-            create a summary of this video transcript that short and easy to understand.
+            return formattedContent;
 
-            Instructions:
-            1. If the transcript is not in English, translate it to English first
-            2. Break down the content into clear, logical sections
-            3. Use bullet points to highlight key information
-            4. Keep the summary concise while capturing the main ideas
-            5. Include any important quotes, statistics, or specific details
-            6. Format the output with HTML tags for better readability
-
-            Here is the transcript to summarize:
-            ${text}
-        `;
-
-        // Generate content with streaming
-        const result = await model.generateContentStream(prompt);
-        let formattedContent = '';
-
-        // Process and format chunks as they arrive
-        for await (const chunk of result.stream) {
-            const chunkText = chunk.text();
-            formattedContent += chunkText;
-
-            // Format the current content
-            const formattedSummary = formattedContent
-                .split('\n')
-                .map(line => {
-                    line = line.trim();
-                    if (line.length === 0) return '';
-
-                    if (line.endsWith(':')) {
-                        return `<p style="font-size: 2.2em; color: #000; margin: 1em 0 0.3em 0; border-bottom: 1px solid #ddd; padding-bottom: 0.2em; font-weight: bold;">${line}</p>`;
+        } catch (error) {
+            if (error.message.includes('429') || error.message.includes('Resource has been exhausted')) {
+                // If we get a quota exceeded error, try with gemini-1.5-flash
+                modelName = "gemini-1.5-flash";
+                const model = genAI.getGenerativeModel({ 
+                    model: modelName,
+                    safetySettings,
+                    generationConfig: {
+                        temperature: 0.7,
+                        topK: 40,
+                        topP: 0.95,
+                        maxOutputTokens: 8000,
                     }
-
-                    if (line.startsWith('* **')) {
-                        const content = line.replace(/^\* \*\*(.*)\*\*$/, '$1');
-                        return `<li style="font-size: 1.8em; margin: 0.3em 0; font-weight: bold;">${content}</li>`;
-                    }
-
-                    if (line.startsWith('*')) {
-                        const content = line.replace(/^\* /, '');
-                        return `<li style="font-size: 1.8em; margin: 0.3em 0;">${content}</li>`;
-                    }
-
-                    return `<p style="font-size: 1.8em; margin: 0.3em 0; line-height: 1.4;">${line}</p>`;
-                })
-                .filter(line => line.length > 0)
-                .join('\n');
-
-            // Wrap bullet points in unordered lists
-            const wrappedSummary = formattedSummary.replace(
-                /(<li[^>]*>.*?<\/li>\n*)+/g, 
-                match => `<ul style="list-style-type: disc; margin: 0.3em 0 0.3em 1.5em;">${match}</ul>`
-            );
-
-            // Update the summary div with the latest content
-            const summaryDiv = document.getElementById('summary');
-            if (summaryDiv) {
-                summaryDiv.innerHTML = wrappedSummary;
+                });
+                
+                // Try again with the new model
+                const result = await model.generateContent(prompt);
+                return result.response.text();
             }
+            throw error; // Re-throw if it's not a quota error
         }
-
-        return formattedContent;
 
     } catch (error) {
         console.error('Summary generation error:', error);
