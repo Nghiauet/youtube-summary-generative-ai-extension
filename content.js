@@ -95,19 +95,19 @@ async function generateSummary(text) {
 
         // Initialize model with enhanced configuration
         const model = genAI.getGenerativeModel({ 
-            model: "gemini-1.5-flash",
+            model: "gemini-1.5-pro-latest",
             safetySettings,
             generationConfig: {
                 temperature: 0.7,
                 topK: 40,
                 topP: 0.95,
-                maxOutputTokens: 1024,
+                maxOutputTokens: 8000,
             }
         });
 
         // Craft a detailed prompt for better summaries
         const prompt = `
-            I need you to create a summary of this video transcript that is both detailed and easy to read.
+            create a summary of this video transcript that short and easy to understand.
 
             Instructions:
             1. If the transcript is not in English, translate it to English first
@@ -138,20 +138,20 @@ async function generateSummary(text) {
                     if (line.length === 0) return '';
 
                     if (line.endsWith(':')) {
-                        return `<h2 style="font-size: 1.1em; color: #000; margin: 1em 0 0.3em 0; border-bottom: 1px solid #ddd; padding-bottom: 0.2em;">${line}</h2>`;
+                        return `<p style="font-size: 2.2em; color: #000; margin: 1em 0 0.3em 0; border-bottom: 1px solid #ddd; padding-bottom: 0.2em; font-weight: bold;">${line}</p>`;
                     }
 
                     if (line.startsWith('* **')) {
                         const content = line.replace(/^\* \*\*(.*)\*\*$/, '$1');
-                        return `<li style="font-size: 1em; margin: 0.3em 0; font-weight: bold;">${content}</li>`;
+                        return `<li style="font-size: 1.8em; margin: 0.3em 0; font-weight: bold;">${content}</li>`;
                     }
 
                     if (line.startsWith('*')) {
                         const content = line.replace(/^\* /, '');
-                        return `<li style="font-size: 1em; margin: 0.3em 0;">${content}</li>`;
+                        return `<li style="font-size: 1.8em; margin: 0.3em 0;">${content}</li>`;
                     }
 
-                    return `<p style="font-size: 1em; margin: 0.3em 0; line-height: 1.3;">${line}</p>`;
+                    return `<p style="font-size: 1.8em; margin: 0.3em 0; line-height: 1.4;">${line}</p>`;
                 })
                 .filter(line => line.length > 0)
                 .join('\n');
@@ -228,8 +228,11 @@ function createSummaryButton() {
     summaryButton.className = 'ytp-button summary-btn';
     summaryButton.title = 'Generate Summary';
     summaryButton.innerHTML = `
-        <svg height="100%" viewBox="0 0 24 24" width="100%">
-            <path d="M14 17H4v2h10v-2zm6-8H4v2h16V9zM4 15h16v-2H4v2zM4 5v2h16V5H4z" fill="currentColor"/>
+        <svg height="100%" viewBox="0 0 24 24" width="100%" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="3" y1="6" x2="21" y2="6"></line>
+            <line x1="3" y1="12" x2="21" y2="12"></line>
+            <line x1="3" y1="18" x2="16" y2="18"></line>
+            <path d="M17 18l4-4-4-4" stroke-width="2"></path>
         </svg>
     `;
 
@@ -254,20 +257,65 @@ function createSummaryPanel() {
     panel.className = 'summary-panel';
     
     panel.innerHTML = `
-        <div class="summary-header">
-            <h2>Video Summary</h2>
+        <div class="summary-header" style="
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px;
+            background: #ffffff;
+            border-bottom: 1px solid rgba(0,0,0,0.08);
+            backdrop-filter: blur(10px);
+        ">
+            <h2 style="
+                font-size: 2.4rem;
+                font-weight: 700;
+                color: #0f0f0f;
+                margin: 0;
+                font-family: 'YouTube Sans', system-ui, -apple-system, sans-serif;
+            ">Video Summary</h2>
             <div class="summary-controls">
-                <button id="generateSummary" class="summary-btn">
-                    <svg height="16" viewBox="0 0 16 16" width="16">
-                        <path d="M2 2a1 1 0 011-1h10a1 1 0 011 1v12a1 1 0 01-1 1H3a1 1 0 01-1-1V2z" fill="currentColor"/>
-                        <path d="M4 4h8v2H4V4zm0 3h8v2H4V7zm0 3h4v2H4v-2z" fill="currentColor"/>
+                <button id="generateSummary" class="summary-btn" style="
+                    background: #0f0f0f;
+                    color: white;
+                    border: none;
+                    padding: 12px 24px;
+                    border-radius: 24px;
+                    font-weight: 500;
+                    display: flex;
+                    align-items: center;
+                    gap: 8px;
+                    font-size: 1.4rem;
+                    font-family: 'YouTube Sans', system-ui, -apple-system, sans-serif;
+                    transition: all 200ms ease-in-out;
+                    cursor: pointer;
+                    hover: {
+                        background: #272727;
+                        transform: translateY(-1px);
+                    }
+                ">
+                    <svg height="20" viewBox="0 0 24 24" width="20" fill="currentColor">
+                        <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/>
                     </svg>
                     Generate Summary
                 </button>
             </div>
         </div>
-        <div class="summary-content">
-            <div id="summary" style="display: none; font-size: 14px; line-height: 1.4;"></div>
+        <div class="summary-content" style="
+            background: #ffffff;
+            padding: 24px;
+            border-radius: 0 0 12px 12px;
+        ">
+            <div id="summary" style="
+                display: none;
+                font-size: 1.6rem;
+                line-height: 1.6;
+                color: #0f0f0f;
+                background: #ffffff;
+                padding: 24px;
+                border-radius: 12px;
+                border: 1px solid rgba(0,0,0,0.08);
+                font-family: 'YouTube Sans', system-ui, -apple-system, sans-serif;
+            "></div>
         </div>`;
 
     // Find the primary content area
