@@ -57,9 +57,16 @@ function formatTimestamp(seconds) {
 
 async function generateSummary(text) {
     try {
-        // Input validation
+        // If no text provided, try to get transcript first
         if (!text || text.trim().length === 0) {
-            throw new Error('No text provided to summarize');
+            try {
+                text = await extractTranscript();
+                if (!text || text.trim().length === 0) {
+                    throw new Error('No text provided to summarize');
+                }
+            } catch (error) {
+                throw new Error('Failed to get transcript: ' + error.message);
+            }
         }
 
         // Initialize Gemini AI with safety settings
@@ -100,67 +107,73 @@ async function generateSummary(text) {
 
         // Craft a detailed prompt for better summaries
         const prompt = `
-            Please provide a comprehensive yet concise summary of the following video transcript.
-            If the transcript is not in English, please translate it first.
-            Format the summary with clear sections and bullet points where appropriate.
-            Format the summary with HTML styling.
-            Transcript:
+            I need you to create a summary of this video transcript that is both detailed and easy to read.
+
+            Instructions:
+            1. If the transcript is not in English, translate it to English first
+            2. Break down the content into clear, logical sections
+            3. Use bullet points to highlight key information
+            4. Keep the summary concise while capturing the main ideas
+            5. Include any important quotes, statistics, or specific details
+            6. Format the output with HTML tags for better readability
+
+            Here is the transcript to summarize:
             ${text}
         `;
 
-        // Generate content with error handling
-        const result = await model.generateContent(prompt);
-        const response = await result.response;
-        const summary = response.text();
+        // Generate content with streaming
+        const result = await model.generateContentStream(prompt);
+        let formattedContent = '';
 
-        // Validate output
-        if (!summary || summary.trim().length === 0) {
-            throw new Error('Failed to generate a meaningful summary');
+        // Process and format chunks as they arrive
+        for await (const chunk of result.stream) {
+            const chunkText = chunk.text();
+            formattedContent += chunkText;
+
+            // Format the current content
+            const formattedSummary = formattedContent
+                .split('\n')
+                .map(line => {
+                    line = line.trim();
+                    if (line.length === 0) return '';
+
+                    if (line.endsWith(':')) {
+                        return `<h2 style="font-size: 1.1em; color: #000; margin: 1em 0 0.3em 0; border-bottom: 1px solid #ddd; padding-bottom: 0.2em;">${line}</h2>`;
+                    }
+
+                    if (line.startsWith('* **')) {
+                        const content = line.replace(/^\* \*\*(.*)\*\*$/, '$1');
+                        return `<li style="font-size: 1em; margin: 0.3em 0; font-weight: bold;">${content}</li>`;
+                    }
+
+                    if (line.startsWith('*')) {
+                        const content = line.replace(/^\* /, '');
+                        return `<li style="font-size: 1em; margin: 0.3em 0;">${content}</li>`;
+                    }
+
+                    return `<p style="font-size: 1em; margin: 0.3em 0; line-height: 1.3;">${line}</p>`;
+                })
+                .filter(line => line.length > 0)
+                .join('\n');
+
+            // Wrap bullet points in unordered lists
+            const wrappedSummary = formattedSummary.replace(
+                /(<li[^>]*>.*?<\/li>\n*)+/g, 
+                match => `<ul style="list-style-type: disc; margin: 0.3em 0 0.3em 1.5em;">${match}</ul>`
+            );
+
+            // Update the summary div with the latest content
+            const summaryDiv = document.getElementById('summary');
+            if (summaryDiv) {
+                summaryDiv.innerHTML = wrappedSummary;
+            }
         }
 
-        // Format summary for better readability with HTML styling
-        const formattedSummary = summary
-            .split('\n')
-            .map(line => {
-                line = line.trim();
-                if (line.length === 0) return '';
-
-                // Handle section headers (e.g. "Main Topics and Key Points:")
-                if (line.endsWith(':')) {
-                    return `<h2 style="font-size: 1.5em; color: #000; margin: 1.2em 0 0.5em 0; border-bottom: 2px solid #ddd; padding-bottom: 0.3em;">${line}</h2>`;
-                }
-
-                // Handle bold bullet points (starting with **)
-                if (line.startsWith('* **')) {
-                    const content = line.replace(/^\* \*\*(.*)\*\*$/, '$1');
-                    return `<li style="font-size: 1.2em; margin: 0.5em 0; font-weight: bold;">${content}</li>`;
-                }
-
-                // Handle regular bullet points
-                if (line.startsWith('*')) {
-                    const content = line.replace(/^\* /, '');
-                    return `<li style="font-size: 1.2em; margin: 0.5em 0;">${content}</li>`;
-                }
-
-                // Regular text
-                return `<p style="font-size: 1.2em; margin: 0.5em 0; line-height: 1.4;">${line}</p>`;
-            })
-            .filter(line => line.length > 0)
-            .join('\n');
-
-        // Wrap bullet points in unordered lists
-        const wrappedSummary = formattedSummary.replace(
-            /(<li[^>]*>.*?<\/li>\n*)+/g, 
-            match => `<ul style="list-style-type: disc; margin: 0.5em 0 0.5em 2em;">${match}</ul>`
-        );
-
-        console.log("Summary generated successfully:", wrappedSummary);
-        return wrappedSummary;
+        return formattedContent;
 
     } catch (error) {
         console.error('Summary generation error:', error);
         
-        // Enhanced error handling with specific messages
         if (error.message.includes('API key')) {
             throw new Error('❌ Invalid API key or quota exceeded. Please try again later.');
         }
@@ -204,72 +217,57 @@ function decodeHTMLEntities(text) {
     return textarea.value;
 }
 
-// Function to create and add the transcript button to YouTube's player controls
-function createTranscriptButton() {
-    if (document.querySelector('.transcript-btn')) return;
+// Function to create and add the summary button to YouTube's player controls
+function createSummaryButton() {
+    if (document.querySelector('.summary-btn')) return;
 
     const playerControls = document.querySelector('.ytp-right-controls');
     if (!playerControls) return;
 
-    const transcriptButton = document.createElement('button');
-    transcriptButton.className = 'ytp-button transcript-btn';
-    transcriptButton.title = 'Show Transcript';
-    transcriptButton.innerHTML = `
+    const summaryButton = document.createElement('button');
+    summaryButton.className = 'ytp-button summary-btn';
+    summaryButton.title = 'Generate Summary';
+    summaryButton.innerHTML = `
         <svg height="100%" viewBox="0 0 24 24" width="100%">
-            <path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 14H4V6h16v12zM6 10h2v2H6zm0 4h8v2H6zm10 0h2v2h-2zm-6-4h8v2h-8z" fill="currentColor"/>
+            <path d="M14 17H4v2h10v-2zm6-8H4v2h16V9zM4 15h16v-2H4v2zM4 5v2h16V5H4z" fill="currentColor"/>
         </svg>
     `;
 
-    transcriptButton.addEventListener('click', () => {
-        const panel = document.getElementById('transcript-panel');
+    summaryButton.addEventListener('click', () => {
+        const panel = document.getElementById('summary-panel');
         if (panel) {
             panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
         } else {
-            createTranscriptPanel();
+            createSummaryPanel();
         }
     });
 
-    playerControls.appendChild(transcriptButton);
+    playerControls.appendChild(summaryButton);
 }
 
-// Function to create and inject the transcript panel
-function createTranscriptPanel() {
-    if (document.getElementById('transcript-panel')) return;
+// Function to create and inject the summary panel
+function createSummaryPanel() {
+    if (document.getElementById('summary-panel')) return;
 
     const panel = document.createElement('div');
-    panel.id = 'transcript-panel';
-    panel.className = 'transcript-panel';
+    panel.id = 'summary-panel';
+    panel.className = 'summary-panel';
     
     panel.innerHTML = `
-        <div class="transcript-header">
-            <h2>YouTube Transcript</h2>
-            <div class="transcript-controls">
-                <button id="getTranscript" class="transcript-btn">
-                    <svg height="16" viewBox="0 0 16 16" width="16">
-                        <path d="M8 1.5a6.5 6.5 0 100 13 6.5 6.5 0 000-13zM0 8a8 8 0 1116 0A8 8 0 010 8z" fill="currentColor"/>
-                        <path d="M8 3.5a.5.5 0 01.5.5v4a.5.5 0 01-.5.5H4a.5.5 0 010-1h3.5V4a.5.5 0 01.5-.5z" fill="currentColor"/>
-                    </svg>
-                    Extract
-                </button>
-                <button id="copyTranscript" class="transcript-btn">
-                    <svg height="16" viewBox="0 0 16 16" width="16">
-                        <path d="M4 2a2 2 0 012-2h8a2 2 0 012 2v8a2 2 0 01-2 2H6a2 2 0 01-2-2V2z" fill="currentColor"/>
-                        <path d="M2 4a2 2 0 00-2 2v8a2 2 0 002 2h8a2 2 0 002-2v-8a2 2 0 00-2-2H2z" fill="currentColor"/>
-                    </svg>
-                    Copy
-                </button>
-                <button id="summarizeTranscript" class="transcript-btn">
+        <div class="summary-header">
+            <h2>Video Summary</h2>
+            <div class="summary-controls">
+                <button id="generateSummary" class="summary-btn">
                     <svg height="16" viewBox="0 0 16 16" width="16">
                         <path d="M2 2a1 1 0 011-1h10a1 1 0 011 1v12a1 1 0 01-1 1H3a1 1 0 01-1-1V2z" fill="currentColor"/>
                         <path d="M4 4h8v2H4V4zm0 3h8v2H4V7zm0 3h4v2H4v-2z" fill="currentColor"/>
                     </svg>
-                    Summarize
+                    Generate Summary
                 </button>
             </div>
         </div>
-        <div class="transcript-content">
-            <textarea id="transcript-text" placeholder="Transcript will appear here..." readonly></textarea>
-            <div id="summary" style="display: none; font-size: 16px; line-height: 1.5;"></div>
+        <div class="summary-content">
+            <div id="summary" style="display: none; font-size: 14px; line-height: 1.4;"></div>
         </div>`;
 
     // Find the primary content area
@@ -286,103 +284,40 @@ function createTranscriptPanel() {
         }
     }
 
-    // Initialize event listeners
-    initializeEventListeners();
-}
-
-// Initialize event listeners for the panel buttons
-function initializeEventListeners() {
-    const getTranscriptBtn = document.getElementById('getTranscript');
-    const copyTranscriptBtn = document.getElementById('copyTranscript');
-    const summarizeBtn = document.getElementById('summarizeTranscript');
-
-    getTranscriptBtn?.addEventListener('click', handleGetTranscript);
-    copyTranscriptBtn?.addEventListener('click', handleCopyTranscript);
-    summarizeBtn?.addEventListener('click', handleSummarize);
-}
-
-// Handler for getting the transcript
-async function handleGetTranscript() {
-    const transcriptArea = document.getElementById('transcript-text');
-    let dots = '';
-    const loadingInterval = setInterval(() => {
-        dots = dots.length < 3 ? dots + '.' : '';
-        transcriptArea.value = `Extracting transcript${dots}`;
-    }, 500);
-    
-    try {
-        const transcript = await extractTranscript();
-        clearInterval(loadingInterval);
-        if (typeof transcript === 'string' && transcript.startsWith('⚠')) {
-            transcriptArea.value = transcript;
-            return;
-        }
-        transcriptArea.value = transcript;
-    } catch (error) {
-        clearInterval(loadingInterval);
-        transcriptArea.value = '⚠ Error extracting transcript: ' + error.message;
-    }
-}
-
-// Handler for copying the transcript
-function handleCopyTranscript() {
-    const transcriptArea = document.getElementById('transcript-text');
-    transcriptArea.select();
-    document.execCommand('copy');
-    
-    // Visual feedback
-    const copyBtn = document.getElementById('copyTranscript');
-    const originalText = copyBtn.textContent;
-    copyBtn.textContent = 'Copied!';
-    setTimeout(() => {
-        copyBtn.textContent = originalText;
-    }, 2000);
+    // Initialize event listener
+    document.getElementById('generateSummary')?.addEventListener('click', handleSummarize);
 }
 
 // Handler for summarizing the transcript
 async function handleSummarize() {
-    const transcriptArea = document.getElementById('transcript-text');
     const summaryDiv = document.getElementById('summary');
     
-    if (!transcriptArea.value) {
-        alert('Please extract the transcript first.');
-        return;
-    }
-
     if (!summaryDiv) {
         console.error('Summary div not found');
         return;
     }
 
-    let dots = '';
-    const loadingInterval = setInterval(() => {
-        dots = dots.length < 3 ? dots + '.' : '';
-        summaryDiv.textContent = `Generating summary${dots}`;
-    }, 500);
     summaryDiv.style.display = 'block';
+    summaryDiv.textContent = 'Generating summary...';
 
     try {
-        const summary = await generateSummary(transcriptArea.value);
-        clearInterval(loadingInterval);
-        summaryDiv.innerHTML = summary;
+        await generateSummary();
     } catch (error) {
-        clearInterval(loadingInterval);
         if (summaryDiv) {
             summaryDiv.textContent = '⚠ Error generating summary: ' + error.message;
         }
     }
 }
 
-
 // Function to initialize the extension
 function initializeExtension() {
-    createTranscriptButton();
-    createTranscriptPanel();
+    createSummaryButton();
+    createSummaryPanel();
 }
 
 // Watch for YouTube navigation (since YouTube is a SPA)
 const observer = new MutationObserver((mutations) => {
-    if (window.location.pathname === '/watch' && !document.querySelector('.transcript-btn')) {
+    if (window.location.pathname === '/watch' && !document.querySelector('.summary-btn')) {
         initializeExtension();
     }
 });
