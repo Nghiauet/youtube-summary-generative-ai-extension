@@ -1,17 +1,22 @@
-// Import the package
 import { YoutubeTranscript } from 'youtube-transcript';
 
-// Listen for messages from the content script
+// Listen for messages from content script
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-    if (request.action === 'getTranscript') {
+    console.log('Background script received message:', request);
+
+    // Handle fetchTranscript action
+    if (request.action === 'fetchTranscript') {
         YoutubeTranscript.fetchTranscript(request.videoId)
             .then(transcript => {
-                const formattedTranscript = formatTranscript(transcript);
-                sendResponse({ success: true, transcript: formattedTranscript });
+                console.log('Transcript fetched successfully:', transcript);
+                sendResponse({ transcript: transcript });
             })
             .catch(error => {
-                sendResponse({ success: false, error: error.message });
+                console.error('Error fetching transcript:', error);
+                sendResponse({ error: error.message });
             });
-        return true; // Required for async response
+        
+        // Return true to indicate we will send a response asynchronously
+        return true;
     }
 });

@@ -4,14 +4,14 @@
     "type": "module",
     "dependencies": {
         "@google/generative-ai": "^0.21.0",
-        "dotenv": "^16.4.5",
         "youtube-transcript": "^1.2.1"
     },
     "description": "> A Google Chrome extension that allows users to extract and copy the transcript of a YouTube video.",
     "main": "background.js",
     "scripts": {
         "test": "echo \"Error: no test specified\" && exit 1",
-        "build": "webpack --config webpack.config.cjs"
+        "build": "webpack --config webpack.config.cjs",
+        "watch": "webpack --config webpack.config.cjs --watch"
     },
     "keywords": [],
     "author": "",
@@ -20,6 +20,8 @@
         "@babel/core": "^7.24.0",
         "@babel/preset-env": "^7.24.0",
         "babel-loader": "^9.1.3",
+        "copy-webpack-plugin": "^12.0.2",
+        "dotenv": "^16.4.5",
         "webpack": "^5.96.1",
         "webpack-cli": "^5.1.4"
     }

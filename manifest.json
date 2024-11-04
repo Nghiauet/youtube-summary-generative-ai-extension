@@ -1,27 +1,23 @@
 {
     "manifest_version": 3,
-    "name": "YouTube Transcript Summarizer",
-    "version": "1.0",
-    "description": "Extracts and summarizes YouTube video transcripts",
+    "name": "RedWriter Extension",
+    "version": "1.0.0",
+    "description": "Your extension description",
     "permissions": [
-      "activeTab",
-      "scripting"
+        "activeTab",
+        "scripting"
     ],
     "host_permissions": [
-      "https://www.youtube.com/*"
+        "*://*.youtube.com/*"
     ],
-    "action": {
-      "default_popup": "popup.html"
-
+    "background": {
+        "service_worker": "background.js"
     },
-    "web_accessible_resources": [{
-        "resources": ["popup.css"],
-        "matches": ["<all_urls>"]
-    }],
     "content_scripts": [
         {
-          "matches": ["https://www.youtube.com/*"],
-          "js": ["dist/content.bundle.js"]
+            "matches": ["*://*.youtube.com/*"],
+            "css": ["styles/transcript.css"],
+            "js": ["dist/content.bundle.js"]
         }
     ]
-  }
+}

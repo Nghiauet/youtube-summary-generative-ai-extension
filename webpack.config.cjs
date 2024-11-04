@@ -1,6 +1,5 @@
-/** @type {import('webpack').Configuration} */
-
 const path = require('path');
+const CopyPlugin = require('copy-webpack-plugin');
 const webpack = require('webpack');
 const dotenv = require('dotenv');
 
@@ -15,15 +14,7 @@ module.exports = {
     output: {
         filename: '[name].bundle.js',
         path: path.resolve(__dirname, 'dist'),
-    },
-    resolve: {
-        fallback: {
-            "path": false,
-            "os": false,
-            "crypto": false,
-            "stream": false,
-            "buffer": false
-        }
+        clean: true
     },
     module: {
         rules: [
@@ -33,15 +24,46 @@ module.exports = {
                 use: {
                     loader: 'babel-loader',
                     options: {
-                        presets: ['@babel/preset-env']
+                        presets: [
+                            ['@babel/preset-env', {
+                                targets: {
+                                    chrome: "58",
+                                },
+                                modules: 'auto'
+                            }]
+                        ]
                     }
                 }
             }
         ]
     },
     plugins: [
+        new CopyPlugin({
+            patterns: [
+                { 
+                    from: "styles",
+                    to: "styles",
+                    noErrorOnMissing: true 
+                },
+                { 
+                    from: "manifest.json",
+                    to: "manifest.json",
+                    noErrorOnMissing: true 
+                }
+            ],
+        }),
+        // Add environment variables
         new webpack.DefinePlugin({
-            'process.env.GOOGLE_API_KEY': JSON.stringify(process.env.GOOGLE_API_KEY)
+            'process.env': JSON.stringify(process.env)
         })
-    ]
+    ],
+    resolve: {
+        fallback: {
+            "path": false,
+            "fs": false
+        }
+    },
+    experiments: {
+        topLevelAwait: true
+    }
 };
