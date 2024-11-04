@@ -101,15 +101,9 @@ async function generateSummary(text) {
         // Craft a detailed prompt for better summaries
         const prompt = `
             Please provide a comprehensive yet concise summary of the following video transcript.
-            Focus on:
-            - Main topics and key points
-            - Important conclusions or takeaways
-            - Any significant data or statistics mentioned
-            - Key relationships between concepts
-            
             If the transcript is not in English, please translate it first.
             Format the summary with clear sections and bullet points where appropriate.
-            
+            Format the summary with HTML styling.
             Transcript:
             ${text}
         `;
@@ -124,16 +118,44 @@ async function generateSummary(text) {
             throw new Error('Failed to generate a meaningful summary');
         }
 
-        // Format summary for better readability
+        // Format summary for better readability with HTML styling
         const formattedSummary = summary
-            .replace(/•/g, '◆')  // Replace bullets with diamonds
             .split('\n')
-            .map(line => line.trim())
-            .filter(line => line.length > 0)
-            .join('\n\n');
+            .map(line => {
+                line = line.trim();
+                if (line.length === 0) return '';
 
-        console.log("Summary generated successfully:", formattedSummary);
-        return formattedSummary;
+                // Handle section headers (e.g. "Main Topics and Key Points:")
+                if (line.endsWith(':')) {
+                    return `<h2 style="font-size: 1.5em; color: #000; margin: 1.2em 0 0.5em 0; border-bottom: 2px solid #ddd; padding-bottom: 0.3em;">${line}</h2>`;
+                }
+
+                // Handle bold bullet points (starting with **)
+                if (line.startsWith('* **')) {
+                    const content = line.replace(/^\* \*\*(.*)\*\*$/, '$1');
+                    return `<li style="font-size: 1.2em; margin: 0.5em 0; font-weight: bold;">${content}</li>`;
+                }
+
+                // Handle regular bullet points
+                if (line.startsWith('*')) {
+                    const content = line.replace(/^\* /, '');
+                    return `<li style="font-size: 1.2em; margin: 0.5em 0;">${content}</li>`;
+                }
+
+                // Regular text
+                return `<p style="font-size: 1.2em; margin: 0.5em 0; line-height: 1.4;">${line}</p>`;
+            })
+            .filter(line => line.length > 0)
+            .join('\n');
+
+        // Wrap bullet points in unordered lists
+        const wrappedSummary = formattedSummary.replace(
+            /(<li[^>]*>.*?<\/li>\n*)+/g, 
+            match => `<ul style="list-style-type: disc; margin: 0.5em 0 0.5em 2em;">${match}</ul>`
+        );
+
+        console.log("Summary generated successfully:", wrappedSummary);
+        return wrappedSummary;
 
     } catch (error) {
         console.error('Summary generation error:', error);
@@ -247,7 +269,7 @@ function createTranscriptPanel() {
         </div>
         <div class="transcript-content">
             <textarea id="transcript-text" placeholder="Transcript will appear here..." readonly></textarea>
-            <div id="summary" style="display: none;"></div>
+            <div id="summary" style="display: none; font-size: 16px; line-height: 1.5;"></div>
         </div>`;
 
     // Find the primary content area
@@ -351,13 +373,6 @@ async function handleSummarize() {
     }
 }
 
-// Format transcript for display
-function formatTranscript(transcript) {
-    return transcript.map(entry => {
-        const time = formatTimestamp(entry.start);
-        return `[${time}] ${entry.text}`;
-    }).join('\n');
-}
 
 // Function to initialize the extension
 function initializeExtension() {
