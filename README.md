@@ -1,62 +1,40 @@
-# RedWriter | Extract and Copy YouTube Transcripts 🌼📑
-
-> A Google Chrome extension that allows users to extract and copy the transcript of a YouTube video.
-
-<p align="center">
-  <img src="https://raw.githubusercontent.com/SJROHRXD/RedWriter/master/assets/RDWTR.png" alt="RDWTR"/>
-  <img src="https://raw.githubusercontent.com/SJROHRXD/RedWriter/master/assets/RDWTR2.png" alt="RDWTR"/>
-</p>
-
-<!-- ![RedWriter](https://raw.githubusercontent.com/SJROHRXD/RedWriter/master/assets/RDWTR.png)
-![RedWriter](https://raw.githubusercontent.com/SJROHRXD/RedWriter/master/assets/RDWTR2.png) -->
-
-## Features
-
-- Extract transcripts from YouTube videos that have a *visible* transcript.
-- Copy the entire transcript, including timestamps, with a single click.
+# Youtube Summary Generative AI Extension
 
 ## Installation
 
-1. Clone this repository or download it as a ZIP file and extract the contents.
-2. Open Google Chrome and navigate to `chrome://extensions`.
-3. Enable "Developer mode" by toggling the switch in the top right corner of the page.
-4. Click "Load unpacked" and select the folder containing the extracted extension files.
-5. The YouTube Transcript Extractor extension should now be visible in your extensions list.
+1. Clone this repository
+2. Install dependencies:
+```bash
+npm install
+```
+3. Build the extension:
+```bash
+npm run dev
+```
+4. Load the extension in Chrome by navigating to `chrome://extensions/` and clicking "Load unpacked". Select the folder.
+# Google Gemini API Integration
 
-> Note: Whenever updating this extension, be sure to reload the extension in `chrome://extensions`.
+This project uses the Google Gemini API for AI functionality. Follow these steps to set up your API key.
+
+## Getting Started
+
+### 1. Get Your API Key
+1. Visit [Google AI Studio](https://makersuite.google.com/app/apikey)
+2. Sign in with your Google account
+3. Click "Create API Key"
+4. Copy your generated API key
+
+### 2. Configure Environment Variables
+1. Create a `.env` file in the root directory of the project
+2. Add your API key to the `.env` file:
+```env
+GOOGLE_API_KEY=your_api_key_here
+```
+
+### Important Notes
+- Never commit your `.env` file to version control
+- Keep your API key secure and private
+- Make sure `.env` is listed in your `.gitignore` file
 
 ## Usage
-
-1. Visit a YouTube video page that has a visible transcript.
-2. Click on the YouTube Transcript Extractor extension icon in the Chrome toolbar.
-3. In the extension popup, click the "Extract Transcript" button to extract the transcript.
-4. The extracted transcript, including timestamps, should appear in the textarea within the popup.
-5. Click the "Copy All" button to copy the entire transcript to your clipboard.
-
-> Note: Make sure the transcript is visible on the YouTube video page before using the extension. To display the transcript, click on the three-dot menu icon below the video, then select "Open transcript."
-
-## Future Development
-
-- Stylization (she's a little ugly)
-- Option to exclude timestamps
-- Better formatting upon Paste
-
-## License
-
-This project is open-source and available under the [MIT License](LICENSE).
-
-## A Better Extension
-
-Shoutout to [Glasp](https://glasp.co/), as their extension is amazing and wonderful and much better in regards to automating all-the-things beyond just copying transcripts 🌻
-
-## Resources
-
-- [Chrome Developers: Extensions 101](https://developer.chrome.com/docs/extensions/mv3/getstarted/extensions-101/)
-- [Chrome Developers: Development basics](https://developer.chrome.com/docs/extensions/mv3/getstarted/development-basics/)
-- [Chrome Developers: Extension development overview](https://developer.chrome.com/docs/extensions/mv3/devguide/)
-
-## Acknowledgements
-
-- [Suraj Vishwakarma](https://surajondev.com/) via [DailyDev](https://daily.dev/blog/create-chrome-extension-with-html-css-and-javascript) for a wonderfully straightforward overview of Chrome Extension Development 🌷
-
-- [OpenAI](https://www.openai.com/) for their assistance in developing this extension (and this README, lol), and especially for assistance in isolating the *deeeeeeeply* nested transcript elements in YouTube's code ✨
+The application will automatically load the API key from your `.env` file when needed.

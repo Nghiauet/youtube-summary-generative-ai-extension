@@ -1,12 +1,12 @@
 {
-    "name": "redwriter-extension",
+    "name": "youtube-summary-generative-ai-extension",
     "version": "1.0.0",
     "type": "module",
     "dependencies": {
         "@google/generative-ai": "^0.21.0",
         "youtube-transcript": "^1.2.1"
     },
-    "description": "> A Google Chrome extension that allows users to extract and copy the transcript of a YouTube video.",
+    "description": "Generate a summary of a YouTube video using Generative AI",
     "main": "background.js",
     "scripts": {
         "test": "echo \"Error: no test specified\" && exit 1",
