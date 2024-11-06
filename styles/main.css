@@ -1,6 +1,6 @@
 :root {
   --text: #0f0f0f;
-  --bg: #ffffff;
+  --bg: #F2F2F2;
   --border: rgba(0, 0, 0, 0.08);
 }
 
@@ -86,6 +86,5 @@ ul {
   :root {
     --text: #fff;
     --bg: #272727;
-    --border: rgba(0, 0, 0, 0.08);
   }
 }
