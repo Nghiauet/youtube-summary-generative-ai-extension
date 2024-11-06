@@ -1,23 +1,18 @@
 {
-    "manifest_version": 3,
-    "name": "Youtube Summary Generative AI Extension",
-    "version": "1.0.0",
-    "description": "Generate a summary of a YouTube video using Generative AI",
-    "permissions": [
-        "activeTab",
-        "scripting"
-    ],
-    "host_permissions": [
-        "*://*.youtube.com/*"
-    ],
-    "icons": {
-        "128": "images/icon128.png"
-    },
-    "content_scripts": [
-        {
-            "matches": ["*://*.youtube.com/*"],
-            "css": ["styles/transcript.css"],
-            "js": ["dist/content.bundle.js"]
-        }
-    ]
+	"manifest_version": 3,
+	"name": "Youtube Summary Generative AI Extension",
+	"version": "1.0.0",
+	"description": "Generate a summary of a YouTube video using Generative AI",
+	"permissions": ["activeTab", "scripting"],
+	"host_permissions": ["*://*.youtube.com/*"],
+	"icons": {
+		"128": "images/icon128.png"
+	},
+	"content_scripts": [
+		{
+			"matches": ["*://*.youtube.com/*"],
+			"css": ["styles/main.css"],
+			"js": ["dist/content.bundle.js"]
+		}
+	]
 }

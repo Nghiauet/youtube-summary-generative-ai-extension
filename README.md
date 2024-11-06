@@ -37,7 +37,7 @@ npm install
 ### 3. Build and Install Extension
 1. Build the extension:
    ```bash
-   npm run dev
+   npm run build
    ```
 
 2. Load in Chrome:
