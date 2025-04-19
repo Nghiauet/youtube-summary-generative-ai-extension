@@ -97,7 +97,7 @@ async function generateSummary(text) {
 		]
 
 		// Initialize model with enhanced configuration
-		let modelName = "gemini-1.5-pro-latest"
+		let modelName = process.env.MODEL_NAME
 		try {
 			const model = genAI.getGenerativeModel({
 				model: modelName,
